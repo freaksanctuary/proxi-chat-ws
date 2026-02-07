@@ -1,0 +1,22 @@
+version: '3.9'
+services:
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '6379:6379'
+  next:
+    build: ./nextjs16
+    hostname: next
+    ports:
+      - '81:3000'
+    depends_on:
+      - redis
+  websocket:
+    build: ./websocket
+    restart: on-failure
+    hostname: websocket
+    ports:
+      - '82:8000'
+    depends_on:
+      - redis
+
