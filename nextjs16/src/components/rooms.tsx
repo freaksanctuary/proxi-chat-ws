@@ -64,8 +64,11 @@ export default function RoomPage({ roomId, userName }: HomePageProps) {
   }, [messageData]);
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//54.179.120.31:82/ws/room`;
+    const Url =
+      window.location.protocol === "https:"
+        ? "wss://chat.imnopas.me"
+        : "ws://locahost";
+    const wsUrl = `${Url}/ws/room`;
     console.log("🔌 Attempting to connect to:", wsUrl);
 
     const ws = new WebSocket(wsUrl);
