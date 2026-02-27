@@ -8,7 +8,7 @@ services:
     build: ./nextjs16
     hostname: next
     ports:
-      - '81:3000'
+      - '80:3000'
     depends_on:
       - redis
   websocket:
