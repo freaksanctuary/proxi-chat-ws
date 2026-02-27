@@ -32,6 +32,7 @@ export default function Lobby({ userName }: LobbyProps) {
           latitude,
           longitude,
         });
+        console.log("loc", location);
       },
       (err) => {
         console.error(err.message);
@@ -42,11 +43,13 @@ export default function Lobby({ userName }: LobbyProps) {
   const { data: nearbyRooms } = useQuery({
     queryKey: [location?.latitude, location?.longitude],
     queryFn: async () => {
+      console.log("query");
       if (!location) return null;
 
       const res = await client.room.search.get({
         query: { latitude: location.latitude, longitude: location.longitude },
       });
+      console.log("data", res.data);
       return res.data;
     },
     enabled: !!location,
