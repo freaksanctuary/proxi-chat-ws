@@ -37,6 +37,11 @@ export default function Lobby({ userName }: LobbyProps) {
       (err) => {
         console.error(err.message);
       },
+      {
+        enableHighAccuracy: true, // Use GPS if possible
+        timeout: 10000, // 10 seconds max wait
+        maximumAge: 0,
+      },
     );
   }, []);
 
@@ -57,7 +62,7 @@ export default function Lobby({ userName }: LobbyProps) {
 
   const { mutate: createRoom } = useMutation({
     mutationFn: async () => {
-      const res = await client.room.create.post({ location });
+      const res = await client.room.create.post({ location, userName });
 
       if (res.status === 200) {
         router.push(`/room/${res.data?.roomId}`);
@@ -117,10 +122,12 @@ export default function Lobby({ userName }: LobbyProps) {
                 </div>
               </div>
 
-              {nearbyRooms?.nearbyRooms.map((room) => (
+              {nearbyRooms?.nearbyRooms?.map((room) => (
                 <a key={room.roomId} href={`/room/${room.roomId}`}>
-                  <div className="bg-zinc-950 border border-zinc-800 p-3 text-sm text-zinc-400 font-mono">
-                    Distance: {room.distance}m
+                  <div className="flex justify-start items-center gap-3 bg-zinc-950 border border-zinc-800 p-3 text-sm text-zinc-400 font-mono">
+                    <p>By: {room.creator}</p>
+                    <p>Distance: {room.distance}</p>
+                    <p className="text-amber-50">{room.userCount}</p>
                   </div>
                 </a>
               ))}

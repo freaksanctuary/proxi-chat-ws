@@ -63,10 +63,18 @@ export const sendMessage = async (roomId, message) => {
 
   await redisClient.evalSha(sha,
     {
-      keys: [`meta:${roomId}`, `messages:${roomId}`, "rooms:exp"],
+      keys: [`room:${roomId}`, `messages:${roomId}`, "rooms:exp"],
       arguments: args
     }
   )
+}
+
+async function increment(roomId) {
+  await redisClient.hIncrBy(`room:${roomId}`, "userCount", 1);
+}
+
+async function decrement(roomId) {
+  await redisClient.hIncrBy(`room:${roomId}`, "userCount", -1);
 }
 
 wss.on('connection', (ws) => {
@@ -92,11 +100,14 @@ wss.on('connection', (ws) => {
           case 'subscribe':
             if (!subscribe(ws, data.roomId, chatRooms.get(data.roomId), setRoom)) {
               sendError(ws, 'RATE_LIMITED', 'Subscription limit reached');
+            } else {
+                await increment(data.roomId)
             }
             break;
 
           case 'unsubscribe':
             unsubscribe(ws, data.roomId, chatRooms.get(data.roomId), delRoom);
+            await decrement(data.roomId)
             break;
 
           case 'publish': 

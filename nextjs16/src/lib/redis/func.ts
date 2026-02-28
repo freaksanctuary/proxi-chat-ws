@@ -1,50 +1,72 @@
-import redisClient from './index'
-import { getCreateRoomSHA, cleanupSearchSHA} from './index'
-import { TTL, ROOMS } from './keys'
+import redisClient from "./index";
+import { getCreateRoomSHA, cleanupSearchSHA } from "./index";
+import { TTL, ROOMS } from "./keys";
 
 interface NearbyRoomsProps {
-  latitude: number
-  longitude: number
-  radius: number
+  latitude: number;
+  longitude: number;
+  radius: number;
 }
 
 interface CreateRoomProps {
-    roomId: string,
-    lon: number;
-    lat: number;
+  creator: string;
+  roomId: string;
+  lon: number;
+  lat: number;
 }
 
 const toArgs = (...vals: (string | number)[]) => vals.map(String);
 
-const getNearbyRooms = async ({latitude, longitude, radius}: NearbyRoomsProps) => {
-  const sha = await cleanupSearchSHA()
+const getNearbyRooms = async ({
+  latitude,
+  longitude,
+  radius,
+}: NearbyRoomsProps) => {
+  const sha = await cleanupSearchSHA();
+  try {
+    const raw = await redisClient.evalSha(sha, {
+      keys: [ROOMS.GEO, ROOMS.EXP],
+      arguments: toArgs(longitude, latitude, radius, "m"),
+    });
 
-  const raw = await redisClient.evalSha(
-    sha, {
-    keys: [ROOMS.GEO, ROOMS.EXP],
-    arguments: toArgs(longitude, latitude, radius, "m")
+    console.log("RAW:", raw);
+    const nearbyRooms = (raw as any[]).map(
+      ([roomId, distance, values]: [string, string, string[]]) => {
+        // unpack the HVALS array
+        const [creator, userCountStr] = values;
+
+        return {
+          roomId,
+          distance: Number(distance), // convert string distance to number
+          creator,
+          userCount: Number(userCountStr ?? 0), // convert userCount to number
+        };
+      },
+    );
+
+    console.log(nearbyRooms);
+
+    return nearbyRooms;
+  } catch (err) {
+    console.error("REDIS ERROR:", err);
+    throw err;
   }
-  )
+};
 
-  const nearbyRooms = (raw as any[]).map(
-    ([roomId, distance]) => ({
+const createRoom = async ({ creator, roomId, lon, lat }: CreateRoomProps) => {
+  const sha = await getCreateRoomSHA();
+
+  await redisClient.evalSha(sha, {
+    keys: [ROOMS.GEO, ROOMS.EXP, `room:${roomId}`],
+    arguments: toArgs(
+      creator,
       roomId,
-      distance: Number(distance)
-    })
-  )
-  return nearbyRooms
-}
+      lon,
+      lat,
+      Date.now(),
+      Date.now() + TTL.INACTIVE_MS,
+    ),
+  });
+};
 
-const createRoom = async ({roomId, lon, lat}: CreateRoomProps) => {
-    const sha = await getCreateRoomSHA()
-
-    await redisClient.evalSha(
-        sha,
-        { keys: [ROOMS.GEO, ROOMS.EXP, `meta:${roomId}`],
-          arguments: toArgs(roomId, lon, lat, Date.now(), Date.now() + TTL.INACTIVE_MS)
-        }
-    )
-}
-
-
-export { getNearbyRooms, createRoom }
+export { getNearbyRooms, createRoom };

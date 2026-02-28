@@ -23,6 +23,7 @@ export default function RoomPage({ roomId, userName }: HomePageProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [isPending, setIsPending] = useState<boolean>(false);
   const [input, setInput] = useState("");
   const [wsMessages, setWsMessages] = useState<Message[]>([]);
@@ -64,10 +65,14 @@ export default function RoomPage({ roomId, userName }: HomePageProps) {
   }, [messageData]);
 
   useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [wsMessages]);
+
+  useEffect(() => {
     const Url =
       window.location.protocol === "https:"
         ? "wss://chat.imnopas.me"
-        : "ws://locahost";
+        : "ws://localhost";
     const wsUrl = `${Url}/ws/room`;
     console.log("🔌 Attempting to connect to:", wsUrl);
 
@@ -131,7 +136,7 @@ export default function RoomPage({ roomId, userName }: HomePageProps) {
 
   return (
     <main className="flex flex-col h-screen max-h-screen overflow-hidden">
-      <header className="border-b border-zinc-800 p-4 flex items-center justify-between bg-zinc-900/30">
+      <header className="border-b border-zinc-800 p-4 flex items-center justify-between bg-black">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
             <span className="text-xs text-zinc-500 uppercase">Room ID</span>
@@ -143,12 +148,6 @@ export default function RoomPage({ roomId, userName }: HomePageProps) {
           </div>
 
           <div className="h-8 w-px bg-zinc-800" />
-
-          <div className="flex flex-col">
-            <span className="text-xs text-zinc-500 uppercase">
-              Self-Destruct
-            </span>
-          </div>
         </div>
       </header>
 
@@ -185,6 +184,7 @@ export default function RoomPage({ roomId, userName }: HomePageProps) {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 border-t border-zinc-800 bg-zinc-900/30">
